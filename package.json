@@ -1,7 +1,7 @@
 {
   "name": "svcready",
   "main": "build/index.js",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "",
   "scripts": {
     "build": "tsc",
@@ -43,5 +43,9 @@
     "rimraf": "^3.0.0",
     "typescript": "^3.7.4"
   },
-  "types": "build/index.d.ts"
+  "types": "build/index.d.ts",
+  "files": [
+    "build/**/*.js",
+    "build/**/*.ts"
+  ]
 }
