@@ -1,25 +1,12 @@
 import * as express from 'express'
 import { logMiddleware, logger } from './log'
-import { Request, User, Token } from './types'
-import { createAuth } from './auth'
-
-export type Options = {
-  port: number
-  logging?: boolean
-  auth?: AuthConfig
-}
-
-export type AuthConfig = {
-  secret: string
-  expiryMins?: number
-  getToken(token: string): Promise<Token | undefined>
-  saveToken(userId: string, token: string): Promise<Token>
-  getUser(userId: string): Promise<User | undefined>
-  saveUser(userId: string, password: string): Promise<void>
-}
+import { Request, Options, StatusError } from './types'
+import { createAuth, encrypt, createToken } from './auth'
+import * as bodyParser from 'body-parser'
 
 export function create(opts: Options = { port: 3000 }) {
   const app = express()
+  app.use(bodyParser.json(), bodyParser.urlencoded({ extended: true }))
 
   if (opts.logging !== false) {
     app.use(logMiddleware)
@@ -45,7 +32,18 @@ export function create(opts: Options = { port: 3000 }) {
     return promise
   }
 
-  return { app, start }
+  const createUser = async (userId: string, password: string) => {
+    if (!opts.auth) {
+      throw new StatusError(`Unable to create user: Auth not enabled`, 500)
+    }
+
+    const hash = await encrypt(password)
+    await opts.auth?.saveUser(userId, hash)
+    const token = await createToken(userId, opts.auth)
+    return token
+  }
+
+  return { app, start, createUser }
 }
 
 function errorHandler(err: any, req: Request, res: express.Response, _next: express.NextFunction) {

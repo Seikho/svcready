@@ -1,8 +1,7 @@
 import * as bcrypt from 'bcrypt'
 import * as jwt from 'jsonwebtoken'
-import { AuthConfig } from './api'
 import { handle } from './handler'
-import { StatusError } from './types'
+import { StatusError, AuthConfig } from './types'
 
 export function createAuth(config: AuthConfig) {
   const handler = handle(async (req, res) => {
@@ -55,7 +54,7 @@ export function createAuth(config: AuthConfig) {
 
 const salt = getSalt()
 
-async function encrypt(value: string) {
+export async function encrypt(value: string) {
   const hashed = await bcrypt.hash(value, await salt)
   return hashed
 }
@@ -72,7 +71,7 @@ async function getSalt() {
 
 const ONE_MIN_MS = 60000
 
-async function createToken(userId: string, cfg: AuthConfig) {
+export async function createToken(userId: string, cfg: AuthConfig) {
   const expiry = cfg.expiryMins || 1440
   const expires = Date.now() + ONE_MIN_MS * expiry
   const user = await cfg.getUser(userId)

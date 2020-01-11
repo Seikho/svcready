@@ -26,10 +26,11 @@ import { create, logger } from 'svcready'
  *
  * See the type definitions for their signatures
  */
+import { Router } from 'express'
 import * as auth from './my-auth'
 import { someRouter } from './some-feature'
 import { otherRouter } from './other-feature'
-import { anotherRouter } from './another-featuer'
+import { users } from './users'
 
 const { app, start } = create({
   // JWT token expiry
@@ -54,9 +55,13 @@ const { app, start } = create({
   },
 })
 
-app.use('/some', someRouter)
-app.use('/other', otherRouter)
-app.use('/another', anotherRouter)
+const routes = Router()
+
+routes.use('/some', someRouter)
+routes.use('/other', otherRouter)
+routes.use('/users', users)
+
+app.use('/api', routes)
 
 start()
   .then(() => logger.info('service ready'))
@@ -64,4 +69,21 @@ start()
     logger.error({ ex }, 'service failed to start')
     process.exit(-1)
   })
+
+// ./users
+import { Router } from 'express'
+import { handle, createUser } from 'svcready'
+
+const router = Router()
+
+// Would normally be defined in another module
+const register = handle(async (req, res) => {
+  // Validate body...
+  // Verify user id is available...
+  const { username, password } = req.body
+  const token = await createUser(username, password)
+  res.json({ token })
+})
+
+router.post('/register', register)
 ```
