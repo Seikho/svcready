@@ -14,7 +14,7 @@ export type User = {
 
 export type Token = {
   userId: string
-  expires: Date
+  token: string
 }
 
 export interface Request extends express.Request {

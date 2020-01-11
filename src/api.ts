@@ -1,5 +1,5 @@
 import * as express from 'express'
-import { logMiddleware } from './log'
+import { logMiddleware, logger } from './log'
 import { Request, User, Token } from './types'
 import { createAuth } from './auth'
 
@@ -12,9 +12,9 @@ export type Options = {
 export type AuthConfig = {
   secret: string
   expiryMins?: number
-  getToken(token: string): Promise<Token | null>
-  createToken(userId: string): Promise<Token>
-  getUser(userId: string): Promise<User | null>
+  getToken(token: string): Promise<Token | undefined>
+  saveToken(userId: string, token: string): Promise<Token>
+  getUser(userId: string): Promise<User | undefined>
   saveUser(userId: string, password: string): Promise<void>
 }
 
@@ -29,6 +29,7 @@ export function create(opts: Options = { port: 3000 }) {
     const { handler, middleware } = createAuth(opts.auth)
     app.use(middleware)
     app.post('/api/login', handler)
+    app.get('/healthcheck', (_, res) => res.json('ok'))
   }
 
   const start = () => {
@@ -36,6 +37,7 @@ export function create(opts: Options = { port: 3000 }) {
       app.use(errorHandler as any)
       app.listen(opts.port, err => {
         if (err) return reject(new Error(`Failed to start server: ${err}`))
+        logger.info(`api listen on port ${opts.port}`)
         resolve()
       })
     })

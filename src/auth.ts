@@ -24,8 +24,9 @@ export function createAuth(config: AuthConfig) {
       throw new StatusError('Invalid username or password', 401)
     }
 
-    const token = await config.createToken(userId)
-    res.json(token)
+    const token = await createToken(userId, config)
+    await config.saveToken(userId, token)
+    res.json({ userId, token })
   })
 
   const middleware = handle(async (req, _res, next) => {
