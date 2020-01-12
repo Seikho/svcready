@@ -1,16 +1,21 @@
+import * as express from 'express'
 import * as sessionParser from 'express-session'
 import * as bcrypt from 'bcrypt'
 import { handle } from './handler'
 import { StatusError, AuthConfig } from './types'
 
-export function createAuth(config: AuthConfig) {
+export function createAuth(config?: AuthConfig) {
+  if (!config) {
+    return { handler: noop, middleware: noop }
+  }
+
   const handler = handle(async (req, res) => {
     if (!req.body) throw new Error('Invalid request body: No body found')
     const userId: string = req.body.username ?? req.body.userId
     const password: string = req.body.password
 
     if (!userId || !password) {
-      throw new Error('Invalid request body: username or password not provided')
+      throw new StatusError('Invalid request body: username or password not provided', 400)
     }
 
     const user = await config.getUser(userId)
@@ -32,10 +37,14 @@ export function createAuth(config: AuthConfig) {
   const middleware = sessionParser({
     secret: config.secret,
     cookie: { secure: true, maxAge: expiry * 60000, httpOnly: true },
+    resave: false,
+    saveUninitialized: true,
   })
 
   return { handler, middleware }
 }
+
+const noop: express.RequestHandler = (_, __, next) => next()
 
 export async function encrypt(value: string) {
   const salt = await getSalt()

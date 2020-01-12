@@ -16,18 +16,16 @@ export function create(opts: Options = { port: 3000 }) {
     app.use(logMiddleware)
   }
 
-  let session: express.RequestHandler | undefined
-  if (opts.auth) {
-    const { handler, middleware } = createAuth(opts.auth)
-    session = middleware
-    app.use(middleware)
-    app.post('/api/login', handler)
-    app.get('/healthcheck', (_, res) => res.json('ok'))
-  }
-
-  const { interval, sockets } = setup(server, opts.sockets, session)
+  const { handler, middleware } = createAuth(opts.auth)
+  const { interval, sockets } = setup(server, opts, middleware)
 
   const start = () => {
+    if (opts.auth) {
+      app.use(middleware)
+      app.post('/api/login', handler)
+      app.get('/healthcheck', (_, res) => res.json('ok'))
+    }
+
     const promise = new Promise<void>((resolve, reject) => {
       app.use(errorHandler as any)
       app.listen(opts.port, err => {
@@ -41,7 +39,7 @@ export function create(opts: Options = { port: 3000 }) {
   }
 
   const stop = () => {
-    clearInterval(interval)
+    if (interval) clearInterval(interval)
     server.close()
   }
 
@@ -50,6 +48,9 @@ export function create(opts: Options = { port: 3000 }) {
 
 function errorHandler(err: any, req: Request, res: express.Response, _next: express.NextFunction) {
   const status = typeof err.status === 'number' ? err.status : 500
+  if (req.log && status === 500) {
+    req.log.error({ err }, 'Unhandled exception')
+  }
   if ('code' in err) {
     const code = err.code || 'UNKNOWN'
     res.status(status).send({ message: err.message, code })
@@ -57,10 +58,7 @@ function errorHandler(err: any, req: Request, res: express.Response, _next: expr
   }
 
   const message = err.status ? err.message : 'Internal server error'
-  if (req.log) {
-    req.log.error({ err }, 'Unhandled exception')
-  }
 
-  res.status(err.status).send({ message })
+  res.status(status).send({ message })
   return
 }

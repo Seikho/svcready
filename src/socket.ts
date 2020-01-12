@@ -1,10 +1,11 @@
 import * as http from 'http'
 import * as ws from 'ws'
 import * as express from 'express'
+import { Options } from './types'
 
 type Client = ws & { isAlive: boolean }
 
-export function setup(app: http.Server, noSockets?: boolean, session?: express.RequestHandler) {
+export function setup(app: http.Server, opts: Options, session?: express.RequestHandler) {
   const sockets = new ws.Server({ path: '/ws', server: app })
 
   const interval = setInterval(() => {
@@ -13,7 +14,7 @@ export function setup(app: http.Server, noSockets?: boolean, session?: express.R
     }
   }, 30000)
 
-  if (noSockets) {
+  if (opts.sockets === false) {
     clearInterval(interval)
     return { sockets, interval }
   }
