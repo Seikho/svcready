@@ -1,5 +1,5 @@
+import * as sessionParser from 'express-session'
 import * as bcrypt from 'bcrypt'
-import * as jwt from 'jsonwebtoken'
 import { handle } from './handler'
 import { StatusError, AuthConfig } from './types'
 
@@ -23,39 +23,23 @@ export function createAuth(config: AuthConfig) {
       throw new StatusError('Invalid username or password', 401)
     }
 
-    const token = await createToken(userId, config)
-    await config.saveToken(userId, token)
-    res.json({ userId, token })
+    req.session.userId = userId
+    res.json({ userId })
   })
 
-  const middleware = handle(async (req, _res, next) => {
-    const bearer = req.header('Authorization')
-    if (!bearer) {
-      next()
-      return
-    }
+  const expiry = config.expiryMins || 1440
 
-    const [prefix, token] = bearer.split(' ')
-    if (prefix !== 'Bearer' || !token) {
-      throw new StatusError('Unauthorized', 401)
-    }
-
-    const result = await config.getToken(token)
-    if (!result) {
-      throw new StatusError('Unauthorized', 401)
-    }
-
-    req.user = { userId: result.userId }
-    next()
+  const middleware = sessionParser({
+    secret: config.secret,
+    cookie: { secure: true, maxAge: expiry * 60000, httpOnly: true },
   })
 
   return { handler, middleware }
 }
 
-const salt = getSalt()
-
 export async function encrypt(value: string) {
-  const hashed = await bcrypt.hash(value, await salt)
+  const salt = await getSalt()
+  const hashed = await bcrypt.hash(value, salt)
   return hashed
 }
 
@@ -67,25 +51,4 @@ async function compare(input: string, hashed: string) {
 async function getSalt() {
   const salt = await bcrypt.genSalt(10)
   return salt
-}
-
-const ONE_MIN_MS = 60000
-
-export async function createToken(userId: string, cfg: AuthConfig) {
-  const expiry = cfg.expiryMins || 1440
-  const expires = Date.now() + ONE_MIN_MS * expiry
-  const user = await cfg.getUser(userId)
-
-  if (!user) {
-    throw new Error('User not found')
-  }
-
-  const payload = {
-    expires,
-    userId,
-  }
-
-  const expiresIn = (ONE_MIN_MS * expiry) / 1000
-  const token = jwt.sign(payload, cfg.secret, { expiresIn })
-  return token
 }

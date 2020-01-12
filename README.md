@@ -4,8 +4,7 @@
 
 ## Why
 
-Each time I create a new API I generally end up re-implementing logging, error handling, and authentication.
-
+Each time I create a new API I generally end up re-implementing logging, error handling, websockets, and authentication.  
 I created this library to avoid having to solve these problems each time.
 
 ## Installation
@@ -26,32 +25,37 @@ import { create, logger } from 'svcready'
  *
  * See the type definitions for their signatures
  */
-import { Router } from 'express'
 import * as auth from './my-auth'
+import { Router } from 'express'
 import { someRouter } from './some-feature'
 import { otherRouter } from './other-feature'
 import { users } from './users'
 
-const { app, start } = create({
-  // JWT token expiry
-  expiryMins: 60,
+/**
+ * app: Express app
+ * sockets: WebSocket server
+ * - Sockets are authenticated on "upgrade"
+ * - If the web client has an authenticated session, the socket will be authenticated on connection
+ * - Reconnect them on the client after successfully authenticating to authenticate
+ * - Use sockets.on('message', ...) to handle incoming messages
+ * start: starts the HTTP server
+ * stop: stops the HTTP server and websocket heartbeats
+ */
 
+const { app, sockets, start, stop } = create({
   // Express API port
   port: 3000,
 
   // Auth will only be provided if this config is provided
   auth: {
-    // (token: string) => Promise<Token | undefined>
-    getToken: auth.getToken,
+    // Session expiry in minutes
+    expiryMins: 60,
 
-    // (userId: string, token: string) => Promise<void>
-    createToken: auth.createToken,
+    // Secret used for sessions
+    secret: process.env.APP_SECRET,
 
     // (userId: string) => Promise<User | undefined>
     getUser: auth.getUser,
-
-    // (userId: string, hash: string) => Promise<void>
-    saveUser: auth.saveUser,
   },
 })
 
@@ -72,7 +76,8 @@ start()
 
 // ./users
 import { Router } from 'express'
-import { handle, createUser } from 'svcready'
+import { handle } from 'svcready'
+import { createUser } from '../my-db/create-user'
 
 const router = Router()
 
@@ -81,8 +86,12 @@ const register = handle(async (req, res) => {
   // Validate body...
   // Verify user id is available...
   const { username, password } = req.body
-  const token = await createUser(username, password)
-  res.json({ token })
+
+  const hash = await encrypt(password)
+
+  // Creates a secure password hash and persists it
+  await createUser(username, hash)
+  res.json({ success: true })
 })
 
 router.post('/register', register)

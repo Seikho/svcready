@@ -1,23 +1,31 @@
 import * as express from 'express'
+import * as bodyParser from 'body-parser'
+import * as http from 'http'
 import { logMiddleware, logger } from './log'
 import { Request, Options, StatusError } from './types'
-import { createAuth, encrypt, createToken } from './auth'
-import * as bodyParser from 'body-parser'
+import { createAuth, encrypt } from './auth'
+import { setup } from './socket'
 
 export function create(opts: Options = { port: 3000 }) {
   const app = express()
+  const server = http.createServer(app)
+
   app.use(bodyParser.json(), bodyParser.urlencoded({ extended: true }))
 
   if (opts.logging !== false) {
     app.use(logMiddleware)
   }
 
+  let session: express.RequestHandler | undefined
   if (opts.auth) {
     const { handler, middleware } = createAuth(opts.auth)
+    session = middleware
     app.use(middleware)
     app.post('/api/login', handler)
     app.get('/healthcheck', (_, res) => res.json('ok'))
   }
+
+  const { interval, sockets } = setup(server, opts.sockets, session)
 
   const start = () => {
     const promise = new Promise<void>((resolve, reject) => {
@@ -32,18 +40,12 @@ export function create(opts: Options = { port: 3000 }) {
     return promise
   }
 
-  const createUser = async (userId: string, password: string) => {
-    if (!opts.auth) {
-      throw new StatusError(`Unable to create user: Auth not enabled`, 500)
-    }
-
-    const hash = await encrypt(password)
-    await opts.auth?.saveUser(userId, hash)
-    const token = await createToken(userId, opts.auth)
-    return token
+  const stop = () => {
+    clearInterval(interval)
+    server.close()
   }
 
-  return { app, start, createUser }
+  return { app, start, stop, sockets }
 }
 
 function errorHandler(err: any, req: Request, res: express.Response, _next: express.NextFunction) {

@@ -12,14 +12,11 @@ export type User = {
   hash: string
 }
 
-export type Token = {
-  userId: string
-  token: string
-}
-
-export interface Request extends express.Request {
+export type Request = express.Request & {
   log: Logger
-  user?: { userId: string }
+  session: {
+    userId: string
+  }
 }
 
 export type Handler = (
@@ -32,13 +29,13 @@ export type Options = {
   port: number
   logging?: boolean
   auth?: AuthConfig
+  sockets?: boolean
 }
 
 export type AuthConfig = {
   secret: string
   expiryMins?: number
-  getToken(token: string): Promise<Token | undefined>
-  saveToken(userId: string, token: string): Promise<Token>
   getUser(userId: string): Promise<User | undefined>
-  saveUser(userId: string, password: string): Promise<void>
 }
+
+export type SocketHandler<T = any> = (msg: T) => any

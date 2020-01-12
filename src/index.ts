@@ -1,3 +1,5 @@
 export * from './types'
 export * from './api'
+export { handle } from './handler'
 export { logger } from './log'
+export { encrypt } from './auth'
