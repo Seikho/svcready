@@ -1,12 +1,13 @@
 import * as http from 'http'
 import * as ws from 'ws'
 import * as express from 'express'
+import * as url from 'url'
 import { Options } from './types'
 
 type Client = ws & { isAlive: boolean }
 
 export function setup(app: http.Server, opts: Options, session?: express.RequestHandler) {
-  const sockets = new ws.Server({ path: '/ws', server: app })
+  const sockets = new ws.Server({ noServer: true })
 
   const interval = setInterval(() => {
     for (const client of sockets.clients) {
@@ -27,7 +28,12 @@ export function setup(app: http.Server, opts: Options, session?: express.Request
     return { sockets, interval }
   }
 
-  sockets.on('upgrade', (req, socket, head) => {
+  app.on('upgrade', (req, socket, head) => {
+    const pathname = url.parse(req.url).pathname
+    if (pathname !== '/ws') {
+      socket.destroy()
+      return
+    }
     session(req, {} as any, () => {
       if (req.session.userId) {
         socket.userId = req.session.userId

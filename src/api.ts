@@ -28,8 +28,7 @@ export function create(opts: Options = { port: 3000 }) {
 
     const promise = new Promise<void>((resolve, reject) => {
       app.use(errorHandler as any)
-      app.listen(opts.port, err => {
-        if (err) return reject(new Error(`Failed to start server: ${err}`))
+      server.listen(opts.port, () => {
         logger.info(`api listen on port ${opts.port}`)
         resolve()
       })
