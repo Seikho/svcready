@@ -47,7 +47,7 @@ export function createAuth(config?: AuthConfig) {
 const noop: express.RequestHandler = (_, __, next) => next()
 
 export async function encrypt(value: string) {
-  const salt = await getSalt()
+  const salt = await bcrypt.genSalt(10)
   const hashed = await bcrypt.hash(value, salt)
   return hashed
 }
@@ -55,9 +55,4 @@ export async function encrypt(value: string) {
 async function compare(input: string, hashed: string) {
   const result = await bcrypt.compare(input, hashed)
   return result
-}
-
-async function getSalt() {
-  const salt = await bcrypt.genSalt(10)
-  return salt
 }

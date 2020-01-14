@@ -2,8 +2,8 @@ import * as express from 'express'
 import * as bodyParser from 'body-parser'
 import * as http from 'http'
 import { logMiddleware, logger } from './log'
-import { Request, Options, StatusError } from './types'
-import { createAuth, encrypt } from './auth'
+import { Request, Options } from './types'
+import { createAuth } from './auth'
 import { setup } from './socket'
 
 export function create(opts: Options = { port: 3000 }) {
@@ -11,19 +11,17 @@ export function create(opts: Options = { port: 3000 }) {
   const server = http.createServer(app)
 
   app.use(bodyParser.json(), bodyParser.urlencoded({ extended: true }))
-
-  if (opts.logging !== false) {
-    app.use(logMiddleware)
-  }
+  app.use(logMiddleware)
 
   const { handler, middleware } = createAuth(opts.auth)
+  app.use(middleware)
+
   const { interval, sockets } = setup(server, opts, middleware)
 
   const start = () => {
+    app.get('/healthcheck', (_, res) => res.json('ok'))
     if (opts.auth) {
-      app.use(middleware)
       app.post('/api/login', handler)
-      app.get('/healthcheck', (_, res) => res.json('ok'))
     }
 
     const promise = new Promise<void>((resolve, reject) => {
