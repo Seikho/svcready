@@ -12,7 +12,7 @@ export type User = {
   hash: string
 }
 
-export type Request = express.Request & {
+export type ServiceRequest = express.Request & {
   log: Logger
   session: {
     userId?: string
@@ -24,7 +24,7 @@ export type Token = {
 }
 
 export type Handler = (
-  req: Request,
+  req: ServiceRequest,
   res: express.Response,
   next: express.NextFunction
 ) => Promise<void> | void

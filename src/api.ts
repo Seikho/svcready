@@ -2,7 +2,7 @@ import * as express from 'express'
 import * as bodyParser from 'body-parser'
 import * as http from 'http'
 import { logMiddleware, logger } from './log'
-import { Request, Options } from './types'
+import { ServiceRequest, Options } from './types'
 import { createAuth } from './auth'
 import { setup } from './socket'
 
@@ -43,7 +43,12 @@ export function create(opts: Options = { port: 3000 }) {
   return { app, start, stop, sockets, createToken }
 }
 
-function errorHandler(err: any, req: Request, res: express.Response, _next: express.NextFunction) {
+function errorHandler(
+  err: any,
+  req: ServiceRequest,
+  res: express.Response,
+  _next: express.NextFunction
+) {
   const status = typeof err.status === 'number' ? err.status : 500
   if (req.log && status === 500) {
     req.log.error({ err }, 'Unhandled exception')

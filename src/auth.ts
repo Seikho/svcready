@@ -2,7 +2,7 @@ import * as express from 'express'
 import * as jwt from 'jsonwebtoken'
 import * as bcrypt from 'bcrypt'
 import { handle } from './handler'
-import { StatusError, AuthConfig, Request } from './types'
+import { StatusError, AuthConfig, ServiceRequest } from './types'
 
 export function createAuth(config?: AuthConfig) {
   if (!config) {
@@ -16,7 +16,7 @@ export function createAuth(config?: AuthConfig) {
     return token
   }
 
-  const middleware = (req: Request, res: express.Response, next: express.NextFunction) => {
+  const middleware = (req: ServiceRequest, res: express.Response, next: express.NextFunction) => {
     req.session = {}
     const header = req.header('Authorization')
     if (!header) return next()
