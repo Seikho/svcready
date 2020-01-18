@@ -6,7 +6,7 @@ import { StatusError, AuthConfig, Request } from './types'
 
 export function createAuth(config?: AuthConfig) {
   if (!config) {
-    return { handler: noop, middleware: noop }
+    return { createToken: (_: string) => '', handler: noop, middleware: noop }
   }
 
   const expiresSecs = (config.expiryMins || 1440) * 60
