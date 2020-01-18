@@ -11,6 +11,11 @@ export function createAuth(config?: AuthConfig) {
 
   const expiresSecs = (config.expiryMins || 1440) * 60
 
+  const createToken = (userId: string) => {
+    const token = jwt.sign({ userId }, config.secret, { expiresIn: expiresSecs })
+    return token
+  }
+
   const middleware = (req: Request, res: express.Response, next: express.NextFunction) => {
     req.session = {}
     const header = req.header('Authorization')
@@ -49,7 +54,7 @@ export function createAuth(config?: AuthConfig) {
       throw new StatusError('Invalid username or password', 401)
     }
 
-    const token = jwt.sign({ userId }, config.secret, { expiresIn: expiresSecs })
+    const token = createToken(userId)
 
     req.session.userId = userId
     res.json({ token })
@@ -64,7 +69,7 @@ export function createAuth(config?: AuthConfig) {
     }
   }
 
-  return { handler, middleware, isValidToken }
+  return { handler, middleware, isValidToken, createToken }
 }
 
 const noop: express.RequestHandler = (_, __, next) => next()

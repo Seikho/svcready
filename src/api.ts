@@ -13,7 +13,7 @@ export function create(opts: Options = { port: 3000 }) {
   app.use(bodyParser.json(), bodyParser.urlencoded({ extended: true }))
   app.use(logMiddleware)
 
-  const { handler, middleware } = createAuth(opts.auth)
+  const { handler, middleware, createToken } = createAuth(opts.auth)
   app.use(middleware as any)
 
   const { interval, sockets } = setup(server, opts)
@@ -40,7 +40,7 @@ export function create(opts: Options = { port: 3000 }) {
     server.close()
   }
 
-  return { app, start, stop, sockets }
+  return { app, start, stop, sockets, createToken }
 }
 
 function errorHandler(err: any, req: Request, res: express.Response, _next: express.NextFunction) {
