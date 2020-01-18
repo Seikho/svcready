@@ -19,6 +19,10 @@ export type Request = express.Request & {
   }
 }
 
+export type Token = {
+  userId: string
+}
+
 export type Handler = (
   req: Request,
   res: express.Response,
