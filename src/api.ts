@@ -14,9 +14,9 @@ export function create(opts: Options = { port: 3000 }) {
   app.use(logMiddleware)
 
   const { handler, middleware } = createAuth(opts.auth)
-  app.use(middleware)
+  app.use(middleware as any)
 
-  const { interval, sockets } = setup(server, opts, middleware)
+  const { interval, sockets } = setup(server, opts)
 
   const start = () => {
     app.get('/healthcheck', (_, res) => res.json('ok'))

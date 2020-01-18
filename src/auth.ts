@@ -1,12 +1,33 @@
 import * as express from 'express'
-import * as sessionParser from 'express-session'
+import * as jwt from 'jsonwebtoken'
 import * as bcrypt from 'bcrypt'
 import { handle } from './handler'
-import { StatusError, AuthConfig } from './types'
+import { StatusError, AuthConfig, Request } from './types'
 
 export function createAuth(config?: AuthConfig) {
   if (!config) {
     return { handler: noop, middleware: noop }
+  }
+
+  const expiresSecs = (config.expiryMins || 1440) * 60
+
+  const middleware = (req: Request, res: express.Response, next: express.NextFunction) => {
+    req.session = {}
+    const header = req.header('Authorization')
+    if (!header) return next()
+
+    const [prefix, token] = header.split(' ')
+    if (prefix !== 'Bearer') {
+      return res.status(401).send('Unauthorized')
+    }
+
+    try {
+      const payload: any = jwt.verify(token, config.secret)
+      req.session.userId = payload.userId
+      next()
+    } catch (_) {
+      return res.status(401).send('Unauthorized')
+    }
   }
 
   const handler = handle(async (req, res) => {
@@ -28,20 +49,22 @@ export function createAuth(config?: AuthConfig) {
       throw new StatusError('Invalid username or password', 401)
     }
 
+    const token = jwt.sign({ userId }, config.secret, { expiresIn: expiresSecs })
+
     req.session.userId = userId
-    res.json({ userId })
+    res.json({ token })
   })
 
-  const expiry = config.expiryMins || 1440
+  const isValidToken = (token: string) => {
+    try {
+      jwt.verify(token, config.secret)
+      return true
+    } catch (ex) {
+      return false
+    }
+  }
 
-  const middleware = sessionParser({
-    secret: config.secret,
-    cookie: { secure: true, maxAge: expiry * 60000, httpOnly: true },
-    resave: false,
-    saveUninitialized: true,
-  })
-
-  return { handler, middleware }
+  return { handler, middleware, isValidToken }
 }
 
 const noop: express.RequestHandler = (_, __, next) => next()

@@ -15,7 +15,7 @@ export type User = {
 export type Request = express.Request & {
   log: Logger
   session: {
-    userId: string
+    userId?: string
   }
 }
 
