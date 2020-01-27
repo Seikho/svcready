@@ -27,7 +27,7 @@ export type Handler = (
   req: ServiceRequest,
   res: express.Response,
   next: express.NextFunction
-) => Promise<void> | void
+) => any
 
 export type Options = {
   port: number
