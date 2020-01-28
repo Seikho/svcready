@@ -21,6 +21,8 @@ export type ServiceRequest = express.Request & {
 
 export type Token = {
   userId: string
+  exp: number
+  iat: number
 }
 
 export type Handler = (
