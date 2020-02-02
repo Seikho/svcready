@@ -2,6 +2,7 @@ import * as express from 'express'
 import * as bodyParser from 'body-parser'
 import * as http from 'http'
 import { logMiddleware, logger } from './log'
+import { pagingMiddleware } from './paging'
 import { ServiceRequest, Options } from './types'
 import { createAuth } from './auth'
 import { setup } from './socket'
@@ -15,6 +16,7 @@ export function create(opts: Options = { port: 3000 }) {
 
   const { handler, middleware, createToken } = createAuth(opts.auth)
   app.use(middleware as any)
+  app.use(pagingMiddleware)
 
   const { interval, sockets } = setup(server, opts)
 

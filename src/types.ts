@@ -1,6 +1,11 @@
 import * as Logger from 'bunyan'
 import * as express from 'express'
 
+export type Paging = {
+  page: number
+  size: number
+}
+
 export class StatusError extends Error {
   constructor(public msg: string, public status: number) {
     super(msg)
@@ -13,6 +18,7 @@ export type User = {
 }
 
 export type ServiceRequest = express.Request & {
+  paging?: Paging
   log: Logger
   session: {
     userId?: string
