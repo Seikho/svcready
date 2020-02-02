@@ -1,7 +1,7 @@
 {
   "name": "svcready",
   "main": "build/index.js",
-  "version": "0.4.5",
+  "version": "0.5.1",
   "description": "",
   "scripts": {
     "build": "tsc",

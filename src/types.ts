@@ -18,7 +18,7 @@ export type User = {
 }
 
 export type ServiceRequest = express.Request & {
-  paging?: Paging
+  paging: Paging
   log: Logger
   session: {
     userId?: string
