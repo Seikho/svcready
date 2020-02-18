@@ -23,8 +23,9 @@ export const pagingMiddleware = (req: any, _: any, next: NextFunction) => {
   }
 
   req.paging = {
-    page: page ?? 1,
-    size: size,
+    page,
+    size,
+    offset: page * size - size,
   }
 
   next()

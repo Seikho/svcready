@@ -4,6 +4,7 @@ import * as express from 'express'
 export type Paging = {
   page: number
   size: number
+  offset: number
 }
 
 export class StatusError extends Error {
