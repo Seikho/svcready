@@ -4,12 +4,12 @@ import * as bcrypt from 'bcryptjs'
 import { handle } from './handler'
 import { StatusError, AuthConfig, ServiceRequest } from './types'
 
-let EXPIRES_SECS = 1440 * 60
+let EXPIRES_MINS = 1440
 let SECRET = ''
 
 export function createToken(userId: string) {
   if (SECRET === '') throw new Error('Unable to create token: Secret not set')
-  const token = jwt.sign({ userId }, SECRET, { expiresIn: EXPIRES_SECS })
+  const token = jwt.sign({ userId }, SECRET, { expiresIn: EXPIRES_MINS * 60 })
   return token
 }
 
@@ -18,7 +18,7 @@ export function createAuth(config?: AuthConfig) {
     return { createToken: (_: string) => '', handler: noop, middleware: noop }
   }
 
-  EXPIRES_SECS = config.expiryMins || 1440
+  EXPIRES_MINS = config.expiryMins || 1440
   SECRET = config.secret
 
   const middleware = (req: ServiceRequest, res: express.Response, next: express.NextFunction) => {

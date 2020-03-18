@@ -1,7 +1,7 @@
 {
   "name": "svcready",
   "main": "build/index.js",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "",
   "scripts": {
     "build": "tsc",
@@ -43,7 +43,7 @@
   "devDependencies": {
     "@types/bcryptjs": "^2.4.2",
     "rimraf": "^3.0.0",
-    "typescript": "^3.7.4"
+    "typescript": "^3.8.3"
   },
   "types": "build/index.d.ts",
   "files": [
