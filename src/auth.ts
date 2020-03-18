@@ -5,9 +5,10 @@ import { handle } from './handler'
 import { StatusError, AuthConfig, ServiceRequest } from './types'
 
 let EXPIRES_SECS = 1440 * 60
-let SECRET = 'not yet defined'
+let SECRET = ''
 
 export function createToken(userId: string) {
+  if (SECRET === '') throw new Error('Unable to create token: Secret not set')
   const token = jwt.sign({ userId }, SECRET, { expiresIn: EXPIRES_SECS })
   return token
 }
