@@ -7,6 +7,8 @@ import { ServiceRequest, Options } from './types'
 import { createAuth } from './auth'
 import { setup } from './socket'
 
+export { createToken } from './auth'
+
 export function create(opts: Options = { port: 3000 }) {
   const app = express()
   const server = http.createServer(app)

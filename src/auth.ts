@@ -4,17 +4,21 @@ import * as bcrypt from 'bcrypt'
 import { handle } from './handler'
 import { StatusError, AuthConfig, ServiceRequest } from './types'
 
+let EXPIRES_SECS = 1440 * 60
+let SECRET = 'not yet defined'
+
+export function createToken(userId: string) {
+  const token = jwt.sign({ userId }, SECRET, { expiresIn: EXPIRES_SECS })
+  return token
+}
+
 export function createAuth(config?: AuthConfig) {
   if (!config) {
     return { createToken: (_: string) => '', handler: noop, middleware: noop }
   }
 
-  const expiresSecs = (config.expiryMins || 1440) * 60
-
-  const createToken = (userId: string) => {
-    const token = jwt.sign({ userId }, config.secret, { expiresIn: expiresSecs })
-    return token
-  }
+  EXPIRES_SECS = config.expiryMins || 1440
+  SECRET = config.secret
 
   const middleware = (req: ServiceRequest, res: express.Response, next: express.NextFunction) => {
     req.session = {}
@@ -69,7 +73,7 @@ export function createAuth(config?: AuthConfig) {
     }
   }
 
-  return { handler, middleware, isValidToken, createToken }
+  return { handler, middleware, isValidToken }
 }
 
 const noop: express.RequestHandler = (_, __, next) => next()
