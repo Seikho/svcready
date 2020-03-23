@@ -36,7 +36,9 @@ function check(client: Client) {
   }
 
   client.isAlive = false
-  client.ping(noop)
+  client.ping(() => {
+    client.isAlive = true
+  })
 }
 
 function noop() {}
