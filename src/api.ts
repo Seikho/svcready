@@ -14,7 +14,7 @@ export function create(opts: Options = { port: 3000 }) {
   app.use(bodyParser.json(), bodyParser.urlencoded({ extended: true }))
   app.use(logMiddleware)
 
-  const { handler, middleware, createToken } = createAuth(opts.auth)
+  const { loginHandler, middleware, validateToken } = createAuth(opts.auth)
   app.use(middleware as any)
   app.use(pagingMiddleware)
 
@@ -23,7 +23,7 @@ export function create(opts: Options = { port: 3000 }) {
   const start = () => {
     app.get('/healthcheck', (_, res) => res.json('ok'))
     if (opts.auth) {
-      app.post('/api/login', handler)
+      app.post('/api/login', loginHandler)
     }
 
     const promise = new Promise<void>((resolve, reject) => {
@@ -42,7 +42,7 @@ export function create(opts: Options = { port: 3000 }) {
     server.close()
   }
 
-  return { app, start, stop, sockets, createToken }
+  return { app, start, stop, sockets, validateToken }
 }
 
 function errorHandler(

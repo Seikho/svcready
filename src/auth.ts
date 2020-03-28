@@ -2,7 +2,7 @@ import * as express from 'express'
 import * as jwt from 'jsonwebtoken'
 import * as bcrypt from 'bcryptjs'
 import { handle } from './handler'
-import { StatusError, AuthConfig, ServiceRequest } from './types'
+import { StatusError, AuthConfig, ServiceRequest, Token } from './types'
 
 let EXPIRES_MINS = 1440
 let SECRET = ''
@@ -15,7 +15,7 @@ export function createToken(userId: string) {
 
 export function createAuth(config?: AuthConfig) {
   if (!config) {
-    return { createToken: (_: string) => '', handler: noop, middleware: noop }
+    return { validateToken: (_: string) => null, loginHandler: noop, middleware: noop }
   }
 
   EXPIRES_MINS = config.expiryMins || 1440
@@ -26,22 +26,38 @@ export function createAuth(config?: AuthConfig) {
     const header = req.header('Authorization')
     if (!header) return next()
 
-    const [prefix, token] = header.split(' ')
-    if (prefix !== 'Bearer') {
-      return res.status(401).send('Unauthorized')
-    }
+    const token = validateHeader(header, config.secret)
+    if (!token) return res.status(401).send('Unauthorized')
+    req.session.userId = token.userId
+    next()
+  }
 
+  const validateToken = (token: string): Token | null => {
     try {
-      const payload: any = jwt.verify(token, config.secret)
-      req.session.userId = payload.userId
-      next()
-    } catch (_) {
-      return res.status(401).send('Unauthorized')
+      const payload = jwt.verify(token, config.secret) as Token
+      if (typeof payload === 'string') return null
+
+      const expires = payload.exp * 1000
+      if (expires < Date.now()) return null
+
+      return payload
+    } catch (ex) {
+      return null
     }
   }
 
-  const handler = handle(async (req, res) => {
-    if (!req.body) throw new Error('Invalid request body: No body found')
+  const loginHandler = handle(async (req, res) => {
+    const auth = validateHeader(req.header('Authorization'), config.secret)
+    if (auth) {
+      const token = createToken(auth.userId)
+      res.json({ token })
+      return
+    }
+
+    if (!req.body) {
+      throw new StatusError('Invalid request body: username and password not provided', 400)
+    }
+
     const userId: string = req.body.username ?? req.body.userId
     const password: string = req.body.password
 
@@ -65,19 +81,29 @@ export function createAuth(config?: AuthConfig) {
     res.json({ token })
   })
 
-  const isValidToken = (token: string) => {
-    try {
-      jwt.verify(token, config.secret)
-      return true
-    } catch (ex) {
-      return false
-    }
-  }
-
-  return { handler, middleware, isValidToken }
+  return { loginHandler, middleware, validateToken }
 }
 
 const noop: express.RequestHandler = (_, __, next) => next()
+
+function validateHeader(header: string | undefined, secret: string): Token | null {
+  if (!header) return null
+
+  const [prefix, token] = header.split(' ')
+  if (prefix !== 'Bearer') return null
+
+  try {
+    const payload = jwt.verify(token, secret) as Token
+    if (typeof payload === 'string') return null
+
+    const expires = payload.exp * 1000
+    if (Date.now() > expires) return null
+
+    return payload
+  } catch (ex) {
+    return null
+  }
+}
 
 export async function encrypt(value: string) {
   const salt = await bcrypt.genSalt(10)
