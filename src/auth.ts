@@ -99,7 +99,7 @@ function validateHeader(
   if (prefix !== 'Bearer') return null
 
   try {
-    const payload = jwt.verify(token, secret) as Token
+    const payload = jwt.verify(token, secret, { ignoreExpiration: true }) as Token
     if (typeof payload === 'string') return null
 
     const expires = payload.exp * 1000
