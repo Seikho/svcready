@@ -5,6 +5,7 @@ import { handle } from './handler'
 import { StatusError, AuthConfig, ServiceRequest, Token } from './types'
 
 let EXPIRES_MINS = 1440
+let GRACE_MINS = 0
 let SECRET = ''
 
 export function createToken(userId: string) {
@@ -19,6 +20,7 @@ export function createAuth(config?: AuthConfig) {
   }
 
   EXPIRES_MINS = config.expiryMins || 1440
+  GRACE_MINS = config.graceMins || 0
   SECRET = config.secret
 
   const middleware = (req: ServiceRequest, res: express.Response, next: express.NextFunction) => {
@@ -47,7 +49,7 @@ export function createAuth(config?: AuthConfig) {
   }
 
   const loginHandler = handle(async (req, res) => {
-    const auth = validateHeader(req.header('Authorization'), config.secret)
+    const auth = validateHeader(req.header('Authorization'), config.secret, GRACE_MINS)
     if (auth) {
       const token = createToken(auth.userId)
       res.json({ token })
@@ -86,7 +88,11 @@ export function createAuth(config?: AuthConfig) {
 
 const noop: express.RequestHandler = (_, __, next) => next()
 
-function validateHeader(header: string | undefined, secret: string): Token | null {
+function validateHeader(
+  header: string | undefined,
+  secret: string,
+  graceMins?: number
+): Token | null {
   if (!header) return null
 
   const [prefix, token] = header.split(' ')
@@ -97,7 +103,12 @@ function validateHeader(header: string | undefined, secret: string): Token | nul
     if (typeof payload === 'string') return null
 
     const expires = payload.exp * 1000
-    if (Date.now() > expires) return null
+    if (expires < Date.now()) {
+      if (!graceMins) return null
+
+      const expiredAgoMins = (Date.now() - expires) / 60000
+      if (expiredAgoMins > GRACE_MINS) return null
+    }
 
     return payload
   } catch (ex) {

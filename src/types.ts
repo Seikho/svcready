@@ -48,6 +48,7 @@ export type Options = {
 export type AuthConfig = {
   secret: string
   expiryMins?: number
+  graceMins?: number
   getUser(userId: string): Promise<User | undefined>
 }
 
