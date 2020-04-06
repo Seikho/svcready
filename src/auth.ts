@@ -27,6 +27,7 @@ export function createAuth(config?: AuthConfig) {
     req.session = {}
     const header = req.header('Authorization')
     if (!header) return next()
+    if (req.path === '/api/login') return next()
 
     const token = validateHeader(header, config.secret)
     if (!token) return res.status(401).send('Unauthorized')
