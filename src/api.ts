@@ -18,7 +18,7 @@ export function create(opts: Options = { port: 3000 }) {
   app.use(middleware as any)
   app.use(pagingMiddleware)
 
-  const { interval, sockets } = setup(server, opts)
+  const { interval, sockets, onMsg, sendMsg } = setup(server, opts)
 
   const start = () => {
     app.get('/healthcheck', (_, res) => res.json('ok'))
@@ -42,7 +42,7 @@ export function create(opts: Options = { port: 3000 }) {
     server.close()
   }
 
-  return { app, start, stop, sockets, validateToken }
+  return { app, start, stop, sockets, validateToken, onMsg, sendMsg }
 }
 
 function errorHandler(

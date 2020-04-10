@@ -29,7 +29,7 @@ export function createAuth(config?: AuthConfig) {
     if (!header) return next()
     if (req.path === '/api/login') return next()
 
-    const token = validateHeader(header, config.secret)
+    const token = validateHeader(header)
     if (!token) return res.status(401).send('Unauthorized')
     req.session.userId = token.userId
     next()
@@ -40,8 +40,7 @@ export function createAuth(config?: AuthConfig) {
       const payload = jwt.verify(token, config.secret) as Token
       if (typeof payload === 'string') return null
 
-      const expires = payload.exp * 1000
-      if (expires < Date.now()) return null
+      if (isExpired(payload)) return null
 
       return payload
     } catch (ex) {
@@ -50,7 +49,7 @@ export function createAuth(config?: AuthConfig) {
   }
 
   const loginHandler = handle(async (req, res) => {
-    const auth = validateHeader(req.header('Authorization'), config.secret, GRACE_MINS)
+    const auth = validateHeader(req.header('Authorization'), true)
     if (auth) {
       const token = createToken(auth.userId)
       res.json({ token })
@@ -89,32 +88,36 @@ export function createAuth(config?: AuthConfig) {
 
 const noop: express.RequestHandler = (_, __, next) => next()
 
-function validateHeader(
-  header: string | undefined,
-  secret: string,
-  graceMins?: number
-): Token | null {
+export function validateHeader(header: string | undefined, grace?: boolean): Token | null {
   if (!header) return null
 
   const [prefix, token] = header.split(' ')
   if (prefix !== 'Bearer') return null
 
   try {
-    const payload = jwt.verify(token, secret, { ignoreExpiration: true }) as Token
+    const payload = jwt.verify(token, SECRET, { ignoreExpiration: true }) as Token
     if (typeof payload === 'string') return null
 
-    const expires = payload.exp * 1000
-    if (expires < Date.now()) {
-      if (!graceMins) return null
-
-      const expiredAgoMins = (Date.now() - expires) / 60000
-      if (expiredAgoMins > GRACE_MINS) return null
+    if (isExpired(payload, grace)) {
+      return null
     }
 
+    if (isExpired(payload, grace)) return null
     return payload
   } catch (ex) {
     return null
   }
+}
+
+export function isExpired(token: Token, grace?: boolean) {
+  const expires = token.exp * 1000
+  const expiredAgoMins = (Date.now() - expires) / 60000
+
+  if (grace) {
+    if (expiredAgoMins > GRACE_MINS) return true
+  }
+
+  return expires < Date.now()
 }
 
 export async function encrypt(value: string) {
