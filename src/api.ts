@@ -42,7 +42,7 @@ export function create(opts: Options = { port: 3000 }) {
     server.close()
   }
 
-  return { app, start, stop, sockets, validateToken, onMsg, sendMsg }
+  return { app, start, stop, sockets, validateToken, onMsg, sendMsg, server }
 }
 
 function errorHandler(
