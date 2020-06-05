@@ -34,6 +34,9 @@ export function setup(app: http.Server, opts: Options) {
     logout: (client) => {
       client.userId = undefined
     },
+    ping: (client) => {
+      send(client, { type: 'pong' })
+    },
   }
 
   sockets.on('connection', (client: Client) => {
