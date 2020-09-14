@@ -1,5 +1,6 @@
 export * from './types'
 export * from './api'
 export { handle } from './handler'
-export { logger } from './log'
+export { logger, createLogger } from './log'
 export { encrypt, createToken } from './auth'
+export { SvcSocket } from './socket'

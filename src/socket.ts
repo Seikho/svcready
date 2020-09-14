@@ -3,15 +3,19 @@ import * as ws from 'ws'
 import { validateHeader, isExpired } from './auth'
 import type { Options, Token } from './types'
 
-type Client = ws & { isAlive: boolean; userId?: string; token?: Token | null }
+export interface SvcSocket extends ws {
+  isAlive: boolean
+  userId?: string
+  token?: Token | null
+}
 
-type Handler<T> = (client: Client, event: Message<T>) => Promise<void> | void
+type Handler<T> = (client: SvcSocket, event: Message<T>) => Promise<void> | void
 
 type Message<T> = T & { type: string }
 
 export function setup(app: http.Server, opts: Options) {
   const sockets = new ws.Server({ server: app, path: '/ws' })
-  const clients = sockets.clients as Set<Client>
+  const clients = sockets.clients as Set<SvcSocket>
 
   const interval = check(sockets)
 
@@ -39,7 +43,11 @@ export function setup(app: http.Server, opts: Options) {
     },
   }
 
-  sockets.on('connection', (client: Client) => {
+  let connectHandler = (_client: SvcSocket) => {
+    // NOOP
+  }
+
+  sockets.on('connection', (client: SvcSocket) => {
     client.on('pong', heartbeat)
     client.on('message', (data) => {
       try {
@@ -55,6 +63,7 @@ export function setup(app: http.Server, opts: Options) {
         handlers[obj.type](client, obj)
       } catch (ex) {}
     })
+    connectHandler(client)
   })
 
   function onMsg<T extends { type: string }>(type: string, handler: Handler<T>) {
@@ -63,6 +72,10 @@ export function setup(app: http.Server, opts: Options) {
     }
 
     handlers[type] = handler
+  }
+
+  function onConnect(handler: (client: SvcSocket) => void) {
+    connectHandler = handler
   }
 
   function sendMsg(data: any, userId?: string) {
@@ -79,20 +92,20 @@ export function setup(app: http.Server, opts: Options) {
     }
   }
 
-  return { sockets, interval, onMsg, sendMsg }
+  return { sockets, interval, onMsg, sendMsg, onConnect }
 }
 
-function send(client: Client, data: object) {
+function send(client: SvcSocket, data: object) {
   client.send(JSON.stringify(data))
 }
 
-function heartbeat(client: Client) {
+function heartbeat(client: SvcSocket) {
   client.isAlive = true
 }
 
 function check(server: ws.Server) {
   const interval = setInterval(() => {
-    const clients = server.clients as Set<Client>
+    const clients = server.clients as Set<SvcSocket>
     for (const client of clients) {
       if (client.isAlive === false) {
         client.terminate()
@@ -107,8 +120,6 @@ function check(server: ws.Server) {
   }, 30000)
   return interval
 }
-
-function noop() {}
 
 function noopOnMsg(_type: string, _handler: Handler<any>) {}
 
