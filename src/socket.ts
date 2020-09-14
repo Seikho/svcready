@@ -19,9 +19,13 @@ export function setup(app: http.Server, opts: Options) {
 
   const interval = check(sockets)
 
+  let connectHandler = (_client: SvcSocket) => {
+    // NOOP
+  }
+
   if (opts.sockets === false) {
     clearInterval(interval)
-    return { sockets, interval, onMsg: noopOnMsg, sendMsg: noopSendMsg }
+    return { sockets, interval, onMsg: noopOnMsg, sendMsg: noopSendMsg, onConnect }
   }
 
   const handlers: { [type: string]: Handler<any> } = {
@@ -41,10 +45,6 @@ export function setup(app: http.Server, opts: Options) {
     ping: (client) => {
       send(client, { type: 'pong' })
     },
-  }
-
-  let connectHandler = (_client: SvcSocket) => {
-    // NOOP
   }
 
   sockets.on('connection', (client: SvcSocket) => {
