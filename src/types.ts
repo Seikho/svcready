@@ -28,6 +28,7 @@ export type ServiceRequest = express.Request & {
 }
 
 export type Token = {
+  sub: string
   userId: string
   exp: number
   iat: number

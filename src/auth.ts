@@ -10,7 +10,7 @@ let SECRET = ''
 
 export function createToken(userId: string) {
   if (SECRET === '') throw new Error('Unable to create token: Secret not set')
-  const token = jwt.sign({ userId }, SECRET, { expiresIn: EXPIRES_MINS * 60 })
+  const token = jwt.sign({ userId, sub: userId }, SECRET, { expiresIn: EXPIRES_MINS * 60 })
   return token
 }
 
