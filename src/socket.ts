@@ -32,7 +32,7 @@ export function setup(app: http.Server, opts: Options) {
   const handlers: { [type: string]: Handler<any> } = {
     _login: (client, event: Message<{ token: string }>) => {
       try {
-        const token = validateHeader(event.token)
+        const token = validateHeader(`Bearer ${event.token}`)
         client.userId = token?.userId ?? token?.sub
         client.token = token
         send(client, { type: 'auth', success: true })
