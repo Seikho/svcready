@@ -48,6 +48,7 @@ export type AuthConfig = {
   expiryMins?: number
   graceMins?: number
   getUser(userId: string): Promise<User | undefined>
+  trustProxy?: boolean
   cookie?: {
     /** */
     maxAgeMins?: number

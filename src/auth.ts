@@ -78,7 +78,7 @@ export function createAuth(config?: AuthConfig) {
 
     const token = createToken(userId)
 
-    req.cookies.req.session.userId = userId
+    req.session.userId = userId
     res.json({ token })
   })
 

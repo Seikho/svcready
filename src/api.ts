@@ -14,18 +14,22 @@ export function create(opts: Options = { port: 3000 }) {
   app.use(express.json(), express.urlencoded({ extended: true }))
 
   if (opts.auth) {
+    if (opts.auth.trustProxy) {
+      app.set('trust proxy', 1)
+    }
+
     app.use(
       session({
+        proxy: true,
         secret: opts.auth.secret,
         cookie: {
           httpOnly: true,
           maxAge: (opts.auth.cookie?.maxAgeMins || 10080) * 60 * 1000,
           sameSite: opts.auth.cookie?.sameSite ?? 'strict',
           secure: opts.auth.cookie?.secure ?? true,
-          signed: true,
         },
         resave: false,
-        saveUninitialized: false,
+        saveUninitialized: true,
       })
     )
   }
