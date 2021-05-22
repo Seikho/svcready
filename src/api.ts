@@ -24,6 +24,8 @@ export function create(opts: Options = { port: 3000 }) {
           secure: opts.auth.cookie?.secure ?? true,
           signed: true,
         },
+        resave: false,
+        saveUninitialized: false,
       })
     )
   }
