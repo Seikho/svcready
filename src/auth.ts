@@ -24,7 +24,6 @@ export function createAuth(config?: AuthConfig) {
   SECRET = config.secret
 
   const middleware = (req: ServiceRequest, res: express.Response, next: express.NextFunction) => {
-    req.session = {}
     const header = req.header('Authorization')
     if (!header) return next()
     if (req.path === '/api/login') return next()
@@ -79,7 +78,7 @@ export function createAuth(config?: AuthConfig) {
 
     const token = createToken(userId)
 
-    req.session.userId = userId
+    req.cookies.req.session.userId = userId
     res.json({ token })
   })
 
@@ -111,10 +110,10 @@ export function validateHeader(header: string | undefined, grace?: boolean): Tok
 
 export function isExpired(token: Token, grace?: boolean) {
   const expires = token.exp * 1000
-  const expiredAgoMins = (Date.now() - expires) / 60000
+  const expiredAgeMins = (Date.now() - expires) / 60000
 
   if (grace) {
-    if (expiredAgoMins > GRACE_MINS) return true
+    if (expiredAgeMins > GRACE_MINS) return true
   }
 
   return expires < Date.now()

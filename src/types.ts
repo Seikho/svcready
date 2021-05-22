@@ -23,6 +23,7 @@ export type ServiceRequest = express.Request & {
   log: Logger
   session: {
     userId?: string
+    [key: string]: any
   }
 }
 
@@ -32,11 +33,7 @@ export type Token = {
   iat: number
 }
 
-export type Handler = (
-  req: ServiceRequest,
-  res: express.Response,
-  next: express.NextFunction
-) => any
+export type Handler = (req: ServiceRequest, res: express.Response, next: express.NextFunction) => any
 
 export type Options = {
   port: number
@@ -50,6 +47,12 @@ export type AuthConfig = {
   expiryMins?: number
   graceMins?: number
   getUser(userId: string): Promise<User | undefined>
+  cookie?: {
+    /** */
+    maxAgeMins?: number
+    secure?: boolean
+    sameSite?: 'lax' | 'none' | 'strict' | boolean
+  }
 }
 
 export type SocketHandler<T = any> = (msg: T) => any

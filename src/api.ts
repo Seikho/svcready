@@ -1,5 +1,5 @@
 import * as express from 'express'
-import * as bodyParser from 'body-parser'
+import * as session from 'express-session'
 import * as http from 'http'
 import { logMiddleware, logger } from './log'
 import { pagingMiddleware } from './paging'
@@ -11,7 +11,22 @@ export function create(opts: Options = { port: 3000 }) {
   const app = express()
   const server = http.createServer(app)
 
-  app.use(bodyParser.json(), bodyParser.urlencoded({ extended: true }))
+  app.use(express.json(), express.urlencoded({ extended: true }))
+
+  if (opts.auth) {
+    app.use(
+      session({
+        secret: opts.auth.secret,
+        cookie: {
+          httpOnly: true,
+          maxAge: (opts.auth.cookie?.maxAgeMins || 10080) * 60 * 1000,
+          sameSite: opts.auth.cookie?.sameSite ?? 'strict',
+          secure: opts.auth.cookie?.secure ?? true,
+          signed: true,
+        },
+      })
+    )
+  }
   app.use(logMiddleware)
 
   const { loginHandler, middleware, validateToken } = createAuth(opts.auth)
@@ -26,7 +41,7 @@ export function create(opts: Options = { port: 3000 }) {
       app.post('/api/login', loginHandler)
     }
 
-    const promise = new Promise<void>((resolve, reject) => {
+    const promise = new Promise<void>((resolve, _reject) => {
       app.use(errorHandler as any)
       server.listen(opts.port, () => {
         logger.info(`api listen on port ${opts.port}`)
@@ -45,12 +60,7 @@ export function create(opts: Options = { port: 3000 }) {
   return { app, start, stop, sockets, validateToken, onMsg, sendMsg, server, onConnect }
 }
 
-function errorHandler(
-  err: any,
-  req: ServiceRequest,
-  res: express.Response,
-  _next: express.NextFunction
-) {
+function errorHandler(err: any, req: ServiceRequest, res: express.Response, _next: express.NextFunction) {
   const status = typeof err.status === 'number' ? err.status : 500
   if (req.log && status === 500) {
     req.log.error({ err }, 'Unhandled exception')
