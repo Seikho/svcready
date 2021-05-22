@@ -7,6 +7,7 @@ export interface SvcSocket extends ws {
   isAlive: boolean
   userId?: string
   token?: Token | null
+  data: { [key: string]: any }
 }
 
 type Handler<T> = (client: SvcSocket, event: Message<T>) => Promise<void> | void
@@ -50,6 +51,7 @@ export function setup(app: http.Server, opts: Options) {
   }
 
   sockets.on('connection', (client: SvcSocket) => {
+    client.data = {}
     client.on('pong', heartbeat)
     client.on('message', (data) => {
       try {
