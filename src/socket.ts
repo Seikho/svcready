@@ -29,18 +29,20 @@ export function setup(app: http.Server, opts: Options) {
   }
 
   const handlers: { [type: string]: Handler<any> } = {
-    login: (client, event: Message<{ token: string }>) => {
+    _login: (client, event: Message<{ token: string }>) => {
       try {
         const token = validateHeader(event.token)
         client.userId = token?.userId
         client.token = token
         send(client, { type: 'auth', success: true })
+        handlers.login?.(client, event)
       } catch (ex) {
         send(client, { type: 'auth', error: 'Authentication failed', success: false })
       }
     },
-    logout: (client) => {
+    _logout: (client) => {
       client.userId = undefined
+      handlers.logout?.(client, event)
     },
     ping: (client) => {
       send(client, { type: 'pong' })
@@ -53,14 +55,16 @@ export function setup(app: http.Server, opts: Options) {
       try {
         const obj = JSON.parse(data.toString())
         if (obj.type === undefined) return
-        if (handlers[obj.type] === undefined) return
+
+        const handler = handlers[`_${obj.type}`] || handlers[obj.type]
+        if (handler === undefined) return
 
         if (client.token && isExpired(client.token)) {
           client.userId = undefined
           client.token = undefined
         }
 
-        handlers[obj.type](client, obj)
+        handler(client, obj)
       } catch (ex) {}
     })
     connectHandler(client)
