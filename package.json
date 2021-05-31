@@ -1,7 +1,7 @@
 {
   "name": "svcready",
   "main": "build/index.js",
-  "version": "2.1.5",
+  "version": "2.2.1",
   "description": "",
   "scripts": {
     "build": "tsc",
@@ -39,7 +39,7 @@
     "jsonwebtoken": "^8.5.1",
     "minimist": "^1.2.5",
     "uuid": "^3.3.3",
-    "ws": "^7.3.1"
+    "ws": "^7.4.6"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.2",
