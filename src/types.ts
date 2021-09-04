@@ -1,4 +1,4 @@
-import * as Logger from 'bunyan'
+import * as pino from 'pino'
 import * as express from 'express'
 
 export type Paging = {
@@ -20,7 +20,7 @@ export type User = {
 
 export type ServiceRequest = express.Request & {
   paging: Paging
-  log: Logger
+  log: pino.Logger
   session: {
     userId?: string
     [key: string]: any
@@ -34,7 +34,11 @@ export type Token = {
   iat: number
 }
 
-export type Handler = (req: ServiceRequest, res: express.Response, next: express.NextFunction) => any
+export type Handler = (
+  req: ServiceRequest,
+  res: express.Response,
+  next: express.NextFunction
+) => any
 
 export type Options = {
   port: number

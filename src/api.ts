@@ -11,7 +11,7 @@ export function create(opts: Options = { port: 3000 }) {
   const app = express()
   const server = http.createServer(app)
 
-  app.use(express.json(), express.urlencoded({ extended: true }))
+  app.use(express.json() as any, express.urlencoded({ extended: true }) as any)
 
   if (opts.auth) {
     if (opts.auth.trustProxy) {
@@ -66,7 +66,12 @@ export function create(opts: Options = { port: 3000 }) {
   return { app, start, stop, sockets, validateToken, onMsg, sendMsg, server, onConnect }
 }
 
-function errorHandler(err: any, req: ServiceRequest, res: express.Response, _next: express.NextFunction) {
+function errorHandler(
+  err: any,
+  req: ServiceRequest,
+  res: express.Response,
+  _next: express.NextFunction
+) {
   const status = typeof err.status === 'number' ? err.status : 500
   if (req.log && status === 500) {
     req.log.error({ err }, 'Unhandled exception')

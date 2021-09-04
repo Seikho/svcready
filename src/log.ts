@@ -1,79 +1,65 @@
 import { NextFunction, Response } from 'express'
-import * as bunyan from 'bunyan'
+import * as pino from 'pino'
 import * as uuid from 'uuid'
-const PrettyStream = require('bunyan-prettystream')
 
-const pretty = new PrettyStream()
-pretty.pipe(process.stdout)
+const prettyPrint = process.env.NODE_ENV !== 'production'
 
-const logStream = process.env.NODE_ENV === 'production' ? process.stdout : pretty
+export type Logger = pino.Logger
 
-export type Logger = bunyan
-
-export const logger = bunyan.createLogger({
+export const logger = pino({
   name: 'app',
   level: getLogLevel(),
   serializers: {
-    err: bunyan.stdSerializers.err,
-    req: bunyan.stdSerializers.req,
-    res: bunyan.stdSerializers.res,
+    err: pino.stdSerializers.err,
+    req: pino.stdSerializers.req,
+    res: pino.stdSerializers.res,
   },
-  stream: logStream,
+  prettyPrint,
 })
 
 export function logMiddleware(req: any, res: Response, next: NextFunction) {
-  const log = logger.child({})
-  log.fields.requestId = uuid.v4()
-  log.fields.req = {
-    url: req.url,
-    method: req.method,
-    // Must be a new reference to prevent mutation below
-    body: { ...req.body },
+  const body = { ...req.body }
+  if ('password' in body) {
+    body.password = '[REDACTED]'
   }
 
-  if ('password' in log.fields.req.body) {
-    log.fields.req.body.password = '[REDACTED]'
-  }
+  const log = logger.child({ requestId: uuid.v4(), url: req.url, method: req.method, body })
 
   req.log = log
 
   req.log.info('start request')
+
   const start = Date.now()
+
   res.on('finish', () => {
     const duration = Date.now() - start
-    log.fields.duration = duration
-    log.fields.res = {
-      statusCode: res.statusCode,
-    }
-    req.log.info('end request')
+    req.log.info({ duration, statusCode: res.statusCode }, 'end request')
   })
 
   next()
 }
 
 export function createLogger(name: string) {
-  const log = logger.child({})
-  logger.fields.name = name
-
+  const log = logger.child({ name })
   return log
 }
 
-function getLogLevel(): number {
+function getLogLevel() {
   const level = process.env.LOG_LEVEL || 'info'
   switch (level) {
     case 'fatal':
-      return 60
+      return 'fatal'
     case 'error':
-      return 50
+      return 'error'
     case 'warn':
-      return 40
+      return 'warn'
     case 'info':
-      return 30
+      return 'info'
     case 'debug':
-      return 20
+      return 'debug'
     case 'trace':
-      return 10
+      return 'trace'
   }
 
-  return 30
+  return 'info'
 }
