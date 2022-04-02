@@ -77,6 +77,10 @@ export function setup(app: http.Server, opts: Options) {
       throw new Error(`Sockets: Already registered handler for type '${type}'`)
     }
 
+    if (handlers[`_${type}`] !== undefined) {
+      throw new Error(`Sockets: Cannot override reserved socket handler for type '${type}'`)
+    }
+
     handlers[type] = handler
   }
 
