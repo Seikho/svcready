@@ -33,7 +33,10 @@ export function create(opts: Options = { port: 3000 }) {
       })
     )
   }
-  app.use(logMiddleware)
+
+  if (opts.logging?.enabled) {
+    app.use(logMiddleware(opts.logging))
+  }
 
   const { loginHandler, middleware, validateToken } = createAuth(opts.auth)
   app.use(middleware as any)

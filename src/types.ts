@@ -42,7 +42,14 @@ export type Handler = (
 
 export type Options = {
   port: number
-  logging?: boolean
+  logging?: {
+    enabled: boolean
+    prelog?: (req: express.Request) => void
+
+    /** Keys to redact when logging. E.g. password, accessToken */
+    redact?: string[]
+  }
+
   auth?: AuthConfig
   sockets?: boolean
 }

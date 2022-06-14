@@ -57,6 +57,12 @@ const { app, sockets, start, stop } = create({
     // (userId: string) => Promise<User | undefined>
     getUser: auth.getUser,
   },
+  logging: {
+    enabled: true,
+
+    // Redact secrets before logging
+    redact: ['password', 'accessToken'],
+  },
 })
 
 const routes = Router()
@@ -69,7 +75,7 @@ app.use('/api', routes)
 
 start()
   .then(() => logger.info('service ready'))
-  .catch(ex => {
+  .catch((ex) => {
     logger.error({ ex }, 'service failed to start')
     process.exit(-1)
   })
